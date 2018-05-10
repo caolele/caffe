@@ -19,6 +19,7 @@ void BaseConvolutionLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
   const int num_axes = bottom[0]->num_axes();
   num_spatial_axes_ = num_axes - first_spatial_axis;
   CHECK_GE(num_spatial_axes_, 0);
+  vector<int> bottom_dim_blob_shape(1, num_spatial_axes_ + 1);
   vector<int> spatial_dim_blob_shape(1, std::max(num_spatial_axes_, 1));
   // Setup filter kernel dimensions (kernel_shape_).
   kernel_shape_.Reshape(spatial_dim_blob_shape);
@@ -179,6 +180,15 @@ void BaseConvolutionLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
   weight_offset_ = conv_out_channels_ * kernel_dim_ / group_;
   // Propagate gradients to the parameters (as directed by backward pass).
   this->param_propagate_down_.resize(this->blobs_.size(), true);
+  
+  kernel_h_ = dilation_data[0] * ( kernel_shape_data[0] - 1 ) + 1;
+  kernel_w_ = dilation_data[1] * ( kernel_shape_data[1] - 1 ) + 1;
+
+  stride_h_ = stride_data[0];
+  stride_w_ = stride_data[1];
+
+  pad_h_ = pad_data[0];
+  pad_w_ = pad_data[1];
 }
 
 template <typename Dtype>
@@ -193,13 +203,17 @@ void BaseConvolutionLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
   // TODO: generalize to handle inputs of different shapes.
   for (int bottom_id = 1; bottom_id < bottom.size(); ++bottom_id) {
     CHECK(bottom[0]->shape() == bottom[bottom_id]->shape())
-        << "shape mismatch - bottom[0]: " << bottom[0]->shape_string()
-        << " vs. bottom[" << bottom_id << "]: "
-        << bottom[bottom_id]->shape_string();
+        << "All inputs must have the same shape.";
   }
   // Shape the tops.
   bottom_shape_ = &bottom[0]->shape();
+  height_ = bottom[0]->height();
+  width_ = bottom[0]->width();
   compute_output_shape();
+
+  height_out_ = output_shape_[0];
+  width_out_ = output_shape_[1];
+
   vector<int> top_shape(bottom[0]->shape().begin(),
       bottom[0]->shape().begin() + channel_axis_);
   top_shape.push_back(num_output_);

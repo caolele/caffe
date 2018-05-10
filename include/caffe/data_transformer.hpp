@@ -5,6 +5,7 @@
 
 #include "caffe/blob.hpp"
 #include "caffe/common.hpp"
+#include "caffe/layer.hpp"
 #include "caffe/proto/caffe.pb.h"
 
 namespace caffe {
@@ -90,6 +91,11 @@ class DataTransformer {
    */
   void Transform(Blob<Dtype>* input_blob, Blob<Dtype>* transformed_blob);
 
+  void TransformImgAndSeg(const std::vector<cv::Mat>& cv_img_seg,
+    Blob<Dtype>* transformed_data_blob, Blob<Dtype>* transformed_label_blob,
+    const int ignore_label);
+
+
   /**
    * @brief Infers the shape of transformed_blob will have when
    *    the transformation is applied to the data.
@@ -137,6 +143,7 @@ class DataTransformer {
    *    A uniformly random integer value from ({0, 1, ..., n-1}).
    */
   virtual int Rand(int n);
+  virtual float Uniform(const float min, const float max);
 
   void Transform(const Datum& datum, Dtype* transformed_data);
   // Tranformation parameters
@@ -147,7 +154,42 @@ class DataTransformer {
   Phase phase_;
   Blob<Dtype> data_mean_;
   vector<Dtype> mean_values_;
+  vector<Dtype> scale_factors_;
 };
+
+
+/**
+ *  * @brief Perform some transformation to input data and label.
+ *   */
+template <typename Dtype>
+class PatchTransformerLayer : public Layer<Dtype> {
+public:
+  explicit PatchTransformerLayer(const LayerParameter &param)
+    : Layer<Dtype>(param) {}
+  void LayerSetUp(const vector<Blob<Dtype>*> &bottom,
+                  const vector<Blob<Dtype>*> &top);
+  virtual void Reshape(const vector<Blob<Dtype>*> &bottom,
+                       const vector<Blob<Dtype>*> &top);
+  virtual inline const char* type() const { return "PatchTransformer"; }
+  virtual inline int MinBottomBlobs() const { return 1; }
+  virtual inline int MaxBottomBlobs() const { return 2; }
+  virtual inline int MinTopBlobs() const { return 1; }
+  virtual inline int MaxTopBlobs() const { return 2; }
+
+protected:
+  virtual void Forward_cpu(const vector<Blob<Dtype>*> &bottom,
+                           const vector<Blob<Dtype>*> &top);
+  virtual void Backward_cpu(const vector<Blob<Dtype>*> &top,
+                            const vector<bool> &propagate_down,
+                            const vector<Blob<Dtype>*> &bottom) {
+    NOT_IMPLEMENTED;
+  }
+private:
+  cv::Mat ConvertToCVMat(const Dtype *data, const int &channels,
+                         const int &height, const int &width);
+  void ConvertFromCVMat(const cv::Mat img, Dtype *data);
+};
+
 
 }  // namespace caffe
 

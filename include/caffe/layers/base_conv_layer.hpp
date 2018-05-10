@@ -64,10 +64,13 @@ class BaseConvolutionLayer : public Layer<Dtype> {
 
   /// @brief The spatial dimensions of a filter kernel.
   Blob<int> kernel_shape_;
+  int kernel_h_, kernel_w_;
   /// @brief The spatial dimensions of the stride.
   Blob<int> stride_;
+  int stride_h_, stride_w_;
   /// @brief The spatial dimensions of the padding.
   Blob<int> pad_;
+  int pad_h_, pad_w_;
   /// @brief The spatial dimensions of the dilation.
   Blob<int> dilation_;
   /// @brief The spatial dimensions of the convolution input.
@@ -77,6 +80,8 @@ class BaseConvolutionLayer : public Layer<Dtype> {
   /// @brief The spatial dimensions of the output.
   vector<int> output_shape_;
   const vector<int>* bottom_shape_;
+  int height_, width_;
+  int height_out_, width_out_;
 
   int num_spatial_axes_;
   int bottom_dim_;

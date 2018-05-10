@@ -30,9 +30,7 @@ void Blob<Dtype>::Reshape(const vector<int>& shape) {
   int* shape_data = static_cast<int*>(shape_data_->mutable_cpu_data());
   for (int i = 0; i < shape.size(); ++i) {
     CHECK_GE(shape[i], 0);
-    if (count_ != 0) {
-      CHECK_LE(shape[i], INT_MAX / count_) << "blob size exceeds INT_MAX";
-    }
+    CHECK_LE(shape[i], INT_MAX / count_) << "blob size exceeds INT_MAX";
     count_ *= shape[i];
     shape_[i] = shape[i];
     shape_data[i] = shape[i];
@@ -80,6 +78,56 @@ const int* Blob<Dtype>::gpu_shape() const {
   return (const int*)shape_data_->gpu_data();
 }
 
+// jay add
+template <typename Dtype>
+const Dtype* Blob<Dtype>::cpu_data_at(const int n, const int c, const int h, const int w) const {
+  CHECK(data_);
+  return (const Dtype*)data_->cpu_data() + offset(n, c, h, w);
+}
+
+template <typename Dtype>
+const Dtype* Blob<Dtype>::gpu_data_at(const int n, const int c, const int h, const int w) const {
+  CHECK(data_);
+  return (const Dtype*)data_->gpu_data() + offset(n, c, h, w);
+}
+
+template <typename Dtype>
+const Dtype* Blob<Dtype>::cpu_diff_at(const int n, const int c, const int h, const int w) const {
+  CHECK(diff_);
+  return (const Dtype*)diff_->cpu_data() + offset(n, c, h, w);
+}
+
+template <typename Dtype>
+const Dtype* Blob<Dtype>::gpu_diff_at(const int n, const int c, const int h, const int w) const {
+  CHECK(diff_);
+  return (const Dtype*)diff_->gpu_data() + offset(n, c, h, w);
+}
+
+template <typename Dtype>
+Dtype* Blob<Dtype>::mutable_cpu_data_at(const int n, const int c, const int h, const int w) {
+  CHECK(data_);
+  return static_cast<Dtype*>(data_->mutable_cpu_data()) + offset(n, c, h, w);
+}
+
+template <typename Dtype>
+Dtype* Blob<Dtype>::mutable_gpu_data_at(const int n, const int c, const int h, const int w) {
+  CHECK(data_);
+  return static_cast<Dtype*>(data_->mutable_gpu_data()) + offset(n, c, h, w);
+}
+
+template <typename Dtype>
+Dtype* Blob<Dtype>::mutable_cpu_diff_at(const int n, const int c, const int h, const int w) {
+  CHECK(diff_);
+  return static_cast<Dtype*>(diff_->mutable_cpu_data()) + offset(n, c, h, w);
+}
+
+template <typename Dtype>
+Dtype* Blob<Dtype>::mutable_gpu_diff_at(const int n, const int c, const int h, const int w) {
+  CHECK(diff_);
+  return static_cast<Dtype*>(diff_->mutable_gpu_data()) + offset(n, c, h, w);
+}
+// end jay add
+
 template <typename Dtype>
 const Dtype* Blob<Dtype>::cpu_data() const {
   CHECK(data_);
@@ -89,12 +137,6 @@ const Dtype* Blob<Dtype>::cpu_data() const {
 template <typename Dtype>
 void Blob<Dtype>::set_cpu_data(Dtype* data) {
   CHECK(data);
-  // Make sure CPU and GPU sizes remain equal
-  size_t size = count_ * sizeof(Dtype);
-  if (data_->size() != size) {
-    data_.reset(new SyncedMemory(size));
-    diff_.reset(new SyncedMemory(size));
-  }
   data_->set_cpu_data(data);
 }
 
@@ -102,18 +144,6 @@ template <typename Dtype>
 const Dtype* Blob<Dtype>::gpu_data() const {
   CHECK(data_);
   return (const Dtype*)data_->gpu_data();
-}
-
-template <typename Dtype>
-void Blob<Dtype>::set_gpu_data(Dtype* data) {
-  CHECK(data);
-  // Make sure CPU and GPU sizes remain equal
-  size_t size = count_ * sizeof(Dtype);
-  if (data_->size() != size) {
-    data_.reset(new SyncedMemory(size));
-    diff_.reset(new SyncedMemory(size));
-  }
-  data_->set_gpu_data(data);
 }
 
 template <typename Dtype>
