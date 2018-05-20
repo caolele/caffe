@@ -12,4 +12,9 @@ This repo is verified on [bvlc/caffe](https://hub.docker.com/r/bvlc/caffe) docke
 - In folder ```/opt/caffe/build```, run ```cmake .. && make all -j4``` and wait till it finishes
 - Test the installation using ...
 
+Note: if you get error like "./dlcrfRF: error while loading shared libraries: libcaffe.so.1.0.0: cannot open shared object file: No such file or directory", try to set:
+```
+export LD_LIBRARY_PATH=/opt/caffe/build/lib:$LD_LIBRARY_PATH
+```
+
 
